@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { WebSocketServer } from "ws";
+import { storage } from "./storage";
 
 const app = express();
 
@@ -48,6 +50,52 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+
+  // Set up WebSocket server for real-time billing
+  const wss = new WebSocketServer({ server });
+
+  wss.on("connection", (ws) => {
+    log("WebSocket client connected");
+
+    ws.on("message", async (message) => {
+      try {
+        const data = JSON.parse(message.toString());
+
+        if (data.type === "ping" && data.videoId) {
+          // Get video details from database
+          const video = await storage.getContentById(data.videoId);
+
+          if (!video) {
+            return ws.send(JSON.stringify({ 
+              type: "error", 
+              message: "Video not found" 
+            }));
+          }
+
+          // For now, simulate billing by returning mock balance
+          // In production, this would interact with Stellar smart contracts
+          const mockBalance = data.currentBalance || 10.5;
+          const pricePerTick = parseFloat(video.pricePerTick);
+          const newBalance = Math.max(0, mockBalance - pricePerTick);
+
+          log(`Billing tick: ${data.videoId}, price: ${pricePerTick}, new balance: ${newBalance}`);
+
+          ws.send(JSON.stringify({ 
+            type: "tick", 
+            newBalance: newBalance.toString(),
+            pricePerTick: video.pricePerTick 
+          }));
+        }
+      } catch (err: any) {
+        log(`WebSocket error: ${err.message}`);
+        ws.send(JSON.stringify({ type: "error", message: err.message }));
+      }
+    });
+
+    ws.on("close", () => {
+      log("WebSocket client disconnected");
+    });
+  });
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
