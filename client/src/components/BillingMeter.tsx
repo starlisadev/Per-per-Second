@@ -28,9 +28,9 @@ export function BillingMeter({
   }, [timeWatched, pricePerSecond]);
 
   useEffect(() => {
-    if (isStreaming) {
+    if (isStreaming && balance > 0) {
       setBalanceJustChanged(true);
-      const timeout = setTimeout(() => setBalanceJustChanged(false), 300);
+      const timeout = setTimeout(() => setBalanceJustChanged(false), 400);
       return () => clearTimeout(timeout);
     }
   }, [balance, isStreaming]);
@@ -59,7 +59,7 @@ export function BillingMeter({
       <div className="mb-6 flex items-start justify-between">
         <div className="flex-1">
           <h3 className="mb-1 text-sm font-medium text-muted-foreground">Meter Balance</h3>
-          <div className={`font-mono text-3xl font-bold transition-all ${balanceJustChanged ? 'text-primary scale-105' : ''}`} data-testid="text-balance">
+          <div className={`font-mono text-3xl font-bold transition-colors duration-300 ${balanceJustChanged ? 'text-green-500' : ''}`} data-testid="text-balance">
             {balance.toFixed(4)} XLM
           </div>
         </div>

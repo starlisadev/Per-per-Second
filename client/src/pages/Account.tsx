@@ -107,14 +107,14 @@ export default function Account() {
               <h2 className="mb-1 text-sm font-medium text-muted-foreground">
                 Current Meter Balance
               </h2>
-              <div className="font-mono text-5xl font-bold" data-testid="text-account-balance">
+              <div className="font-mono text-5xl font-bold tabular-nums" data-testid="text-account-balance">
                 {balance} XLM
               </div>
             </div>
 
             <div className="mb-6 rounded-lg bg-muted p-4">
               <p className="mb-1 text-sm text-muted-foreground">Smart Contract Address</p>
-              <p className="font-mono text-xs break-all" data-testid="text-contract-address">
+              <p className="font-mono text-xs break-all tabular-nums" data-testid="text-contract-address">
                 GCXYZ123ABCDEFGHIJKLMNOPQRSTUVWXYZ456789
               </p>
             </div>
@@ -159,19 +159,21 @@ export default function Account() {
                   <TrendingDown className="h-4 w-4" />
                   Total Spent
                 </div>
-                <div className="font-mono text-2xl font-bold">0.12 XLM</div>
+                <div className="font-mono text-2xl font-bold tabular-nums">0.1200 XLM</div>
                 <p className="mt-1 text-xs text-muted-foreground">~$0.01 USD</p>
               </div>
 
               <div className="rounded-lg border p-4">
                 <div className="mb-2 text-sm text-muted-foreground">Videos Watched</div>
-                <div className="text-2xl font-bold">3</div>
-                <p className="mt-1 text-xs text-muted-foreground">2 hours 15 minutes total</p>
+                <div className="text-2xl font-bold tabular-nums">3</div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  <span className="font-mono tabular-nums">2</span> hours <span className="font-mono tabular-nums">15</span> minutes total
+                </p>
               </div>
 
               <div className="rounded-lg border p-4">
                 <div className="mb-2 text-sm text-muted-foreground">Avg Cost per Hour</div>
-                <div className="font-mono text-2xl font-bold">0.053 XLM</div>
+                <div className="font-mono text-2xl font-bold tabular-nums">0.0530 XLM</div>
               </div>
             </div>
           </Card>
@@ -204,11 +206,11 @@ export default function Account() {
               <TableBody>
                 {transactions.map((tx) => (
                   <TableRow key={tx.id} data-testid={`row-transaction-${tx.id}`}>
-                    <TableCell className="font-mono text-xs">{tx.date}</TableCell>
-                    <TableCell>{tx.content}</TableCell>
+                    <TableCell className="font-mono text-xs tabular-nums">{tx.date}</TableCell>
+                    <TableCell className="max-w-md truncate">{tx.content}</TableCell>
                     <TableCell
-                      className={`text-right font-mono font-medium ${
-                        tx.type === "deposit" ? "text-green-600" : "text-muted-foreground"
+                      className={`text-right font-mono font-medium tabular-nums ${
+                        tx.type === "deposit" ? "text-green-500" : ""
                       }`}
                     >
                       {tx.amount} XLM
