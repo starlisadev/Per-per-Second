@@ -1,0 +1,86 @@
+This is an excellent idea, and it's a perfect showcase for Stellar's new **Soroban** smart contract platform. A "pay-per-second" model is a true micropayment system, which is something traditional finance (with its $0.30 + 3% fees) and high-gas blockchains simply cannot handle.
+
+Let's do a deep dive. My initial thought was to use a native Stellar feature called "Claimable Balances," but a "pay-per-second" model requires *partial* claims (e.g., "claim $0.01 every second"), and Claimable Balances are an **all-or-nothing** operation.
+
+The correct, and much more powerful, way to build this is with a **Soroban Smart Contract**.
+
+### 1\. The Core Idea: The "Smart Meter" Contract
+
+Think of this project as building a "pre-paid smart meter" for content.
+
+1.  **User "Tops Up" the Meter:** A user (the viewer) doesn't pay the creator directly. Instead, they send a lump sum (say, 5 XLM) to a **personal smart contract** that acts as their "streaming wallet" or "meter."
+2.  **Backend "Ticks" the Meter:** Your backend (the streaming service) is given permission to "tick" this meter. Every 10 seconds the user watches, your backend calls a function on the smart contract that says, "I'm billing for the last 10 seconds."
+3.  **Contract Releases Funds:** The smart contract verifies the request is from your backend, calculates the tiny fee (e.g., 0.01 XLM), and transfers *only that amount* from its balance to the content creator's wallet.
+4.  **User Leaves:** The user closes the tab. The "ticking" stops. The remaining 4.90 XLM stays safe in *their* smart contract, ready for their next viewing session.
+
+This is decentralized, trustless, and handles micro-payments perfectly.
+
+### 2\. The Full-Stack Architecture
+
+Here are the three components you'll build:
+
+#### Component 1: The Soroban Smart Contract (The "Meter")
+
+This is the "on-chain" part of your backend, written in **Rust**. It's surprisingly simple. It just needs to do three things:
+
+  * **State:** It stores two addresses: `viewer` (the user) and `creator` (the wallet that gets paid). It also holds the balance of funds.
+  * **`deposit()` function:** A public function anyone can call to send funds *to* the contract. This is how the user "tops up" their meter.
+  * **`withdraw(amount)` function:** A **protected** function. This is the core logic.
+      * It checks `if (caller_address != creator_address)`: if true, it fails. Only the creator's wallet can call this.
+      * It checks `if (amount > contract_balance)`: if true, it fails.
+      * If both pass, it performs the transfer: `transfer(contract, creator, amount)`.
+
+#### Component 2: The Backend (The "Billing Server")
+
+This is a standard **Node.js (Express)** server that manages the video library and the "billing ticks." Its most important part is the **WebSocket** connection.
+
+  * **Database (PostgreSQL):** Stores video metadata (title, file path, creator's wallet address, price-per-second).
+  * **REST API Endpoints:**
+      * `GET /api/videos`: Returns a list of all videos.
+      * `GET /api/videos/:id`: Returns info for one video, including its price and the creator's wallet.
+  * **WebSocket Server (`ws` or `socket.io`):**
+      * When a user hits "Play" on the frontend, the frontend connects to this server.
+      * `ws.on('connection', ...)`: A new viewer is connected.
+      * `ws.on('message', ...)`: The server listens for a "heartbeat" message (e.g., a "ping") from the frontend.
+      * **The Billing Logic:**
+        1.  On receiving a "ping," the server knows the user is still watching.
+        2.  It calculates the fee for the interval (e.g., `price_per_second * 10 seconds`).
+        3.  It then uses the **Stellar SDK** to call the `withdraw(fee)` function on that user's specific smart contract.
+      * `ws.on('close', ...)`: The user closed their browser. The "pings" stop, so the billing automatically stops.
+
+#### Component 3: The Frontend (The "Video Player")
+
+This is a **React** (or Svelte/Vue) application.
+
+  * **Pages:** A gallery of videos and a player page.
+  * **Key Logic (Player Page):**
+    1.  **"Top Up":** When the page loads, it checks the user's "smart meter" contract balance. If it's low, it prompts them: "Click here to top up 5 XLM" (which calls the `deposit()` function on their contract).
+    2.  **Connect:** Once funded, it establishes a WebSocket connection to your backend server: `const socket = new WebSocket('wss://api.your-site.com')`.
+    3.  **Start Heartbeat:** When the user clicks "Play," it starts a JavaScript timer:
+        ```javascript
+        // This is the "heartbeat"
+        setInterval(() => {
+          if (socket.readyState === WebSocket.OPEN) {
+            socket.send('ping'); // Send a "ping" every 10 seconds
+          }
+        }, 10000);
+        ```
+    4.  **Listen for Disconnect:** If the socket connection closes (e.g., server restarts), it pauses the video and tries to reconnect.
+
+### 3\. The User Flow (Step-by-Step)
+
+1.  **First-Time User:** A user, Alice, visits your site. She clicks "Watch" on a video.
+2.  **Frontend:** The app says, "First, you need to fund your streaming meter. This will cost 5 XLM."
+3.  **Wallet (Freighter):** Alice's Freighter wallet pops up. She signs a transaction that sends 5 XLM to her personal "meter" smart contract.
+4.  **Frontend:** The app sees the contract is funded. It opens a WebSocket connection to your Node.js backend and starts the video player.
+5.  **Frontend:** The `setInterval` kicks in. 10 seconds pass. It sends a `"ping"` message to the backend.
+6.  **Backend:** The WebSocket server gets the `"ping"`. It checks the database: "This video costs 0.001 XLM/second." It calculates the bill: `0.001 * 10 = 0.01 XLM`.
+7.  **Backend:** The backend's admin wallet signs and sends a transaction to the Stellar network, calling the `withdraw(0.01)` function on *Alice's* smart contract.
+8.  **Smart Contract (On-Chain):** The contract executes.
+      * *Is the caller the official backend?* **Yes.**
+      * *Is 0.01 less than the 5 XLM balance?* **Yes.**
+      * *Action:* Transfer 0.01 XLM to the video creator's wallet.
+9.  **Frontend:** 10 more seconds pass. The process repeats. Alice's contract balance is now 4.98 XLM.
+10. **User Leaves:** Alice watches for 2 minutes (12 pings, 0.12 XLM spent) and closes her laptop. The WebSocket connection breaks.
+11. **Backend:** The `ws.on('close')` event fires. The server stops listening for pings from Alice. Billing **instantly and automatically** stops.
+12. **Result:** Alice's remaining 4.88 XLM is safe in her contract. The creator has earned 0.12 XLM. The system worked with zero trust and near-zero fees.
