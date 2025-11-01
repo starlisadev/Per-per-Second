@@ -4,6 +4,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { BillingMeter } from "@/components/BillingMeter";
 import { TopUpModal } from "@/components/TopUpModal";
+import { LiveMeterOverlay } from "@/components/LiveMeterOverlay";
 import { Play, Pause, Volume2, Maximize } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -65,6 +66,8 @@ export default function VideoPlayer() {
         <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
           <div className="space-y-6">
             <div className="group relative aspect-video overflow-hidden rounded-xl bg-black">
+              <LiveMeterOverlay balance={balance} isStreaming={isPlaying} />
+              
               <img
                 src={cookingThumbnail}
                 alt={videoDetails.title}

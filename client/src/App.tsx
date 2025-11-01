@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import Home from "@/pages/Home";
 import Browse from "@/pages/Browse";
 import VideoPlayer from "@/pages/VideoPlayer";
+import Account from "@/pages/Account";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -15,6 +16,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/browse" component={Browse} />
       <Route path="/video/:id" component={VideoPlayer} />
+      <Route path="/account" component={Account} />
       <Route component={NotFound} />
     </Switch>
   );

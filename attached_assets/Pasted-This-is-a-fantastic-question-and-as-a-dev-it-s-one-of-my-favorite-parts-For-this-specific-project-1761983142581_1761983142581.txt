@@ -1,0 +1,90 @@
+This is a fantastic question, and as a dev, it's one of my favorite parts. For this specific project, the UI/UX has one primary job: **build trust and make the invisible (blockchain payments) visible and simple.**
+
+Your user is experiencing a brand-new payment model. They will be nervous about where their money is going. Your UI must be extremely clear, transparent, and satisfying.
+
+Let's break down the ideal UI/UX by the key user "moments."
+
+### Core Principles
+
+1.  **Clarity Over Clutter:** Don't hide the price. Don't hide the balance. Everything related to money should be front and center.
+2.  **Familiarity:** The "streaming" part of your app should look and feel exactly like Netflix or YouTube. Use familiar layouts (carousels, thumbnails). The user should only have to learn *one* new thing (the payment), not *five*.
+3.  **Visual Feedback:** The user *must* see their money "working." This is the "wow" factor of your demo.
+
+---
+
+### 1. The Homepage (Browsing)
+
+This page should look modern and familiar. Think Netflix.
+
+* **Layout:** A main hero image for a "featured" film, followed by horizontal, scrollable "shelves" or carousels (e.g., "Indie Animation," "Classic Korean Cinema").
+* **The "Wallet" Component:** This is the most important part of your header. It must be *always visible* in the top-right corner.
+    * **State 1 (Logged Out):** A simple `[ Connect Wallet ]` button.
+    * **State 2 (Logged In):** Shows the user's "Smart Meter" balance. Not their whole wallet, just the money they've "topped up" for streaming. It should be a clear, simple box:
+        `[ Meter Balance: 5.00 XLM ]`
+* **The Content Thumbnail (The "Price Tag"):** This is a key UX decision. Don't show the price-per-second, as `0.001 XLM` is meaningless. Instead, *pre-calculate* a simple rate on each thumbnail.
+    * `[Poster Image]`
+    * `Sintel`
+    * **`~ 0.60 XLM / Hour`** (This is clear and helps the user budget).
+
+
+
+---
+
+### 2. The Content Detail Page (The "Top-Up")
+
+When the user clicks a thumbnail, they see the details before they play. This is where you prepare them for the payment.
+
+* **Layout:** A standard layout with the movie poster, title, description, and creator.
+* **The "Call to Action" (CTA) Module:** This is the most important part. It's a box next to the description.
+    * **State 1 (Meter is empty):** The "Play" button is disabled.
+        * `Your Meter is Empty`
+        * `Price: 0.60 XLM / Hour`
+        * `[ Top Up 5 XLM ]` (This button triggers the `deposit()` function on your smart contract and asks the user to sign with Freighter).
+    * **State 2 (Meter is funded):** The "Play" button is active.
+        * `Meter Balance: 5.00 XLM`
+        * `Price: 0.60 XLM / Hour`
+        * `[ ▶ PLAY ]` (This button just links to the Player Page).
+
+
+
+---
+
+### 3. The Player Page (The "Money Shot" for your Demo)
+
+This is the most critical page for your bootcamp demo. The user must see the video and the payment happening *at the same time*.
+
+* **Layout:** A clean, minimal video player.
+* **The "Live Meter" UI:** This is your key feature. It should be a small, non-intrusive overlay in a corner of the screen or a status bar *just below* the player.
+    * **When Playing:** It should be active. A small flashing "LIVE" icon or "STREAMING" text next to the balance.
+        `🟢 STREAMING | Meter: 4.99 XLM`
+    * **The "Tick" Animation:** Every 10 seconds, when your backend successfully bills the contract, this number **must** update. You can't just have it go down slowly. It must visibly "tick" over:
+        * ... `4.99 XLM`
+        * ... `4.98 XLM`
+        * ... `4.97 XLM`
+        This visual feedback is *proof* your system is working.
+    * **When Paused:** This is the clincher for your demo. When the user hits pause, the UI must change instantly.
+        `⏸ PAUSED | Meter: 4.97 XLM`
+        The "ticking" stops. This proves your WebSocket heartbeat is working and the user is in complete control.
+
+### 4. The Account / Wallet Page (The "Proof")
+
+This is a simple dashboard page that proves your system is trustworthy.
+
+* **Layout:** A simple settings page.
+* **Key Components:**
+    1.  **Balance Management:**
+        * `Current Meter Balance: 4.88 XLM`
+        * `[ Top Up Meter ]` button.
+        * `[ Withdraw to Wallet ]` button (This calls a function on your smart contract to return the remaining funds from the meter to their main wallet. This is a *huge* trust-builder).
+    2.  **Transaction History:**
+        * This is your "secret weapon" for the demo. Don't just show your database. You should *actually query the Stellar Horizon API* for the transaction history of the user's smart meter contract.
+        * This creates a 100% verifiable, transparent "bank statement" that your app just displays.
+        * A simple table:
+| Date & Time | Content | Amount | Status |
+| :--- | :--- | :--- | :--- |
+| 11/01/2025 1:12 PM | `deposit` | +5.00 XLM | Confirmed |
+| 11/01/2025 1:14 PM | "Sintel" | -0.01 XLM | Confirmed |
+| 11/01/2025 1:14 PM | "Sintel" | -0.01 XLM | Confirmed |
+| 11/01/2025 1:15 PM | "Sintel" | -0.01 XLM | Confirmed |
+
+By focusing on these key, trust-building components, you'll show your bootcamp instructors that you're not just a coder, but a product-minded developer who understands the user's needs.

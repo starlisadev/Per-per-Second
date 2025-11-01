@@ -22,6 +22,8 @@ export function VideoCard({
   views,
   onClick,
 }: VideoCardProps) {
+  const pricePerHour = (parseFloat(pricePerSecond) * 3600).toFixed(2);
+  
   return (
     <Card
       className="group cursor-pointer overflow-hidden hover-elevate active-elevate-2 transition-all"
@@ -54,8 +56,8 @@ export function VideoCard({
           {creator}
         </p>
         <div className="flex items-center justify-between gap-2">
-          <Badge variant="outline" className="font-mono text-xs">
-            {pricePerSecond} XLM/sec
+          <Badge variant="outline" className="font-mono text-xs font-medium">
+            ~{pricePerHour} XLM/hour
           </Badge>
           {views !== undefined && (
             <span className="text-xs text-muted-foreground" data-testid="text-view-count">

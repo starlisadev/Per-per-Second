@@ -68,8 +68,10 @@ export function Header({
                 <DropdownMenuItem className="gap-2" data-testid="button-copy-address">
                   <span className="font-mono text-xs">{walletAddress}</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem data-testid="button-view-transactions">
-                  View Transactions
+                <DropdownMenuItem asChild>
+                  <Link href="/account" data-testid="link-account">
+                    View Account
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={onDisconnect} data-testid="button-disconnect">
                   Disconnect

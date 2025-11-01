@@ -21,10 +21,19 @@ export function BillingMeter({
   onTopUp,
 }: BillingMeterProps) {
   const [totalSpent, setTotalSpent] = useState(0);
+  const [balanceJustChanged, setBalanceJustChanged] = useState(false);
 
   useEffect(() => {
     setTotalSpent(timeWatched * pricePerSecond);
   }, [timeWatched, pricePerSecond]);
+
+  useEffect(() => {
+    if (isStreaming) {
+      setBalanceJustChanged(true);
+      const timeout = setTimeout(() => setBalanceJustChanged(false), 300);
+      return () => clearTimeout(timeout);
+    }
+  }, [balance, isStreaming]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -43,18 +52,33 @@ export function BillingMeter({
   const progressValue = (balance / 10) * 100;
   const isLowBalance = balance < 1;
 
+  const pricePerHour = (pricePerSecond * 3600).toFixed(2);
+
   return (
     <Card className="sticky top-24 p-6" data-testid="card-billing-meter">
       <div className="mb-6 flex items-start justify-between">
-        <div>
-          <h3 className="mb-1 text-sm font-medium text-muted-foreground">Streaming Meter</h3>
-          <div className="font-mono text-3xl font-bold" data-testid="text-balance">
+        <div className="flex-1">
+          <h3 className="mb-1 text-sm font-medium text-muted-foreground">Meter Balance</h3>
+          <div className={`font-mono text-3xl font-bold transition-all ${balanceJustChanged ? 'text-primary scale-105' : ''}`} data-testid="text-balance">
             {balance.toFixed(4)} XLM
           </div>
         </div>
-        <Badge variant={isStreaming ? "default" : "secondary"} className="gap-1" data-testid="badge-status">
-          {isStreaming && <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />}
-          {isStreaming ? "Streaming" : "Paused"}
+        <Badge 
+          variant={isStreaming ? "default" : "secondary"} 
+          className="gap-1.5 px-3" 
+          data-testid="badge-status"
+        >
+          {isStreaming ? (
+            <>
+              <div className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
+              <span className="font-medium">STREAMING</span>
+            </>
+          ) : (
+            <>
+              <div className="h-2 w-2 rounded-full bg-muted-foreground" />
+              <span>PAUSED</span>
+            </>
+          )}
         </Badge>
       </div>
 
@@ -64,10 +88,10 @@ export function BillingMeter({
         <div className="flex items-center justify-between text-sm">
           <span className="flex items-center gap-2 text-muted-foreground">
             <Zap className="h-4 w-4" />
-            Cost/second
+            Price
           </span>
-          <span className="font-mono font-medium" data-testid="text-price-per-second">
-            {pricePerSecond} XLM
+          <span className="font-mono font-medium" data-testid="text-price-per-hour">
+            {pricePerHour} XLM/hour
           </span>
         </div>
 
