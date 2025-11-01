@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Header } from "@/components/Header";
 import { VideoGallery, type Video } from "@/components/VideoGallery";
 import { Footer } from "@/components/Footer";
 import { TopUpModal } from "@/components/TopUpModal";
+import { type Content } from "@shared/schema";
 
 import cookingThumbnail from "@assets/generated_images/Cooking_tutorial_video_thumbnail_f4135d3c.png";
 import yogaThumbnail from "@assets/generated_images/Fitness_yoga_video_thumbnail_7e1ac9ae.png";
@@ -12,13 +13,46 @@ import travelThumbnail from "@assets/generated_images/Travel_vlog_video_thumbnai
 import musicThumbnail from "@assets/generated_images/Music_production_video_thumbnail_6d77c268.png";
 import scienceThumbnail from "@assets/generated_images/Science_education_video_thumbnail_2b76134a.png";
 
+const thumbnailMap: Record<string, string> = {
+  "cooking-thumbnail": cookingThumbnail,
+  "yoga-thumbnail": yogaThumbnail,
+  "coding-thumbnail": codingThumbnail,
+  "travel-thumbnail": travelThumbnail,
+  "music-thumbnail": musicThumbnail,
+  "science-thumbnail": scienceThumbnail,
+};
+
 export default function Browse() {
   const [, setLocation] = useLocation();
   const [walletConnected, setWalletConnected] = useState(true);
   const [balance, setBalance] = useState("10.5");
   const [topUpModalOpen, setTopUpModalOpen] = useState(false);
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const walletAddress = "GCKFBEIYV2U22IO2BJ4KVJOIP7XPWQGQFKKWXR6UJQCQH3RKCXQTB2YO";
+
+  useEffect(() => {
+    fetch("/api/content")
+      .then((res) => res.json())
+      .then((data: Content[]) => {
+        const mappedVideos: Video[] = data.map((content) => ({
+          id: content.id,
+          title: content.title,
+          creator: content.creator,
+          thumbnail: thumbnailMap[content.thumbnailUrl] || cookingThumbnail,
+          duration: content.duration,
+          pricePerSecond: (parseFloat(content.pricePerTick) / 10).toFixed(4),
+          views: content.views,
+        }));
+        setVideos(mappedVideos);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch content:", err);
+        setLoading(false);
+      });
+  }, []);
 
   const handleDisconnect = () => {
     console.log("Disconnecting wallet...");
@@ -32,80 +66,13 @@ export default function Browse() {
     setBalance(newBalance.toString());
   };
 
-  const videos: Video[] = [
-    {
-      id: "1",
-      title: "Italian Pasta Cooking Masterclass",
-      creator: "Chef Maria",
-      thumbnail: cookingThumbnail,
-      duration: "24:15",
-      pricePerSecond: "0.001",
-      views: 12543,
-    },
-    {
-      id: "2",
-      title: "Morning Yoga Flow for Beginners",
-      creator: "Yoga with Sarah",
-      thumbnail: yogaThumbnail,
-      duration: "18:30",
-      pricePerSecond: "0.0008",
-      views: 8921,
-    },
-    {
-      id: "3",
-      title: "React Hooks Complete Guide",
-      creator: "CodeMaster",
-      thumbnail: codingThumbnail,
-      duration: "42:20",
-      pricePerSecond: "0.0012",
-      views: 15782,
-    },
-    {
-      id: "4",
-      title: "Swiss Alps Travel Vlog",
-      creator: "Wanderlust Adventures",
-      thumbnail: travelThumbnail,
-      duration: "31:45",
-      pricePerSecond: "0.0009",
-      views: 21045,
-    },
-    {
-      id: "5",
-      title: "Music Production in FL Studio",
-      creator: "BeatMaker Pro",
-      thumbnail: musicThumbnail,
-      duration: "36:12",
-      pricePerSecond: "0.0011",
-      views: 9834,
-    },
-    {
-      id: "6",
-      title: "Chemistry Experiments for Kids",
-      creator: "Science Fun Lab",
-      thumbnail: scienceThumbnail,
-      duration: "15:48",
-      pricePerSecond: "0.0007",
-      views: 18234,
-    },
-    {
-      id: "7",
-      title: "Advanced JavaScript Patterns",
-      creator: "CodeMaster",
-      thumbnail: codingThumbnail,
-      duration: "52:30",
-      pricePerSecond: "0.0013",
-      views: 11245,
-    },
-    {
-      id: "8",
-      title: "Mediterranean Diet Guide",
-      creator: "Chef Maria",
-      thumbnail: cookingThumbnail,
-      duration: "28:45",
-      pricePerSecond: "0.0009",
-      views: 14567,
-    },
-  ];
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <p className="text-foreground">Loading videos...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
