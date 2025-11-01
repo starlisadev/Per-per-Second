@@ -23,9 +23,15 @@ export default function VideoPlayer() {
 
   const socketRef = useRef<WebSocket | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const balanceRef = useRef(balance);
 
   const videoId = params?.id || "1";
   const walletAddress = "GCKFBEIYV2U22IO2BJ4KVJOIP7XPWQGQFKKWXR6UJQCQH3RKCXQTB2YO";
+
+  // Keep balance ref in sync with balance state
+  useEffect(() => {
+    balanceRef.current = balance;
+  }, [balance]);
 
   // Fetch video details from API
   useEffect(() => {
@@ -87,11 +93,11 @@ export default function VideoPlayer() {
 
   const sendPing = () => {
     if (socketRef.current?.readyState === WebSocket.OPEN) {
-      console.log("Sending billing ping...");
+      console.log("Sending billing ping with balance:", balanceRef.current);
       socketRef.current.send(JSON.stringify({
         type: "ping",
         videoId: videoId,
-        currentBalance: balance
+        currentBalance: balanceRef.current
       }));
       setTimeWatched((prev) => prev + 10);
     }

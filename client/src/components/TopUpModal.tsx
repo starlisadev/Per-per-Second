@@ -40,6 +40,24 @@ export function TopUpModal({
   const handleTopUp = async () => {
     setLoading(true);
     console.log("Top up triggered with amount:", amount);
+    
+    // TODO: Integrate with Freighter wallet and Stellar smart contract
+    // This is a placeholder implementation
+    // User needs to configure:
+    // 1. SMART_METER_CONTRACT_ID - The deployed smart contract ID
+    // 2. Freighter wallet integration for signing transactions
+    // Example implementation:
+    // 
+    // import { isConnected, getPublicKey, signTransaction } from "@stellar/freighter-api";
+    // const contractId = "YOUR_CONTRACT_ID_HERE";
+    // const amount = parseFloat(amount);
+    // 
+    // if (await isConnected()) {
+    //   const publicKey = await getPublicKey();
+    //   // Build and sign transaction to deposit to smart contract
+    //   // See Stellar SDK documentation for full implementation
+    // }
+    
     await new Promise((resolve) => setTimeout(resolve, 1500));
     onTopUp?.(parseFloat(amount));
     setLoading(false);
