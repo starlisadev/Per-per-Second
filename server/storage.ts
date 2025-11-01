@@ -1,7 +1,7 @@
 import { type User, type InsertUser, type Content, type InsertContent } from "@shared/schema";
 import { db } from "./db";
 import { users, content } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -46,7 +46,7 @@ export class DbStorage implements IStorage {
 
   async incrementViews(id: string): Promise<void> {
     await db.update(content)
-      .set({ views: db.$default(() => content.views) })
+      .set({ views: sql`${content.views} + 1` })
       .where(eq(content.id, id));
   }
 }
