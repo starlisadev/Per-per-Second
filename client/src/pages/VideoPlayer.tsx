@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRoute } from "wouter";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -8,6 +8,7 @@ import { LiveMeterOverlay } from "@/components/LiveMeterOverlay";
 import { Play, Pause, Volume2, Maximize } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { type Content } from "@shared/schema";
 import cookingThumbnail from "@assets/generated_images/Cooking_tutorial_video_thumbnail_f4135d3c.png";
 
 export default function VideoPlayer() {
@@ -17,28 +18,84 @@ export default function VideoPlayer() {
   const [balance, setBalance] = useState(10.5);
   const [topUpModalOpen, setTopUpModalOpen] = useState(false);
   const [walletConnected] = useState(true);
+  const [videoDetails, setVideoDetails] = useState<Content | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const socketRef = useRef<WebSocket | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const videoId = params?.id || "1";
-  const pricePerSecond = 0.001;
   const walletAddress = "GCKFBEIYV2U22IO2BJ4KVJOIP7XPWQGQFKKWXR6UJQCQH3RKCXQTB2YO";
 
-  const videoDetails = {
-    title: "Italian Pasta Cooking Masterclass",
-    creator: "Chef Maria",
-    description:
-      "Learn how to make authentic Italian pasta from scratch. This comprehensive masterclass covers everything from making the perfect dough to creating delicious sauces. Perfect for beginners and experienced cooks alike.",
-  };
-
+  // Fetch video details from API
   useEffect(() => {
-    if (!isPlaying) return;
+    fetch(`/api/content/${videoId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setVideoDetails(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch video details:", err);
+        setLoading(false);
+      });
+  }, [videoId]);
 
-    const interval = setInterval(() => {
-      setTimeWatched((prev) => prev + 1);
-      setBalance((prev) => Math.max(0, prev - pricePerSecond));
-    }, 1000);
+  // Set up WebSocket connection
+  useEffect(() => {
+    const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const socket = new WebSocket(`${wsProtocol}://${window.location.host}`);
+    socketRef.current = socket;
 
-    return () => clearInterval(interval);
-  }, [isPlaying]);
+    socket.onopen = () => console.log("WebSocket connected");
+    socket.onclose = () => console.log("WebSocket disconnected");
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "tick") {
+        setBalance(parseFloat(data.newBalance));
+        console.log("Balance updated:", data.newBalance);
+      } else if (data.type === "error") {
+        console.error("WebSocket error:", data.message);
+        setIsPlaying(false);
+        alert(`Payment error: ${data.message}`);
+      }
+    };
+
+    return () => {
+      socket.close();
+    };
+  }, []);
+
+  // Manage billing heartbeat
+  useEffect(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+
+    if (isPlaying && socketRef.current) {
+      sendPing();
+      intervalRef.current = setInterval(sendPing, 10000);
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isPlaying, videoId]);
+
+  const sendPing = () => {
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      console.log("Sending billing ping...");
+      socketRef.current.send(JSON.stringify({
+        type: "ping",
+        videoId: videoId,
+        currentBalance: balance
+      }));
+      setTimeWatched((prev) => prev + 10);
+    }
+  };
 
   useEffect(() => {
     if (balance < 0.1 && isPlaying) {
@@ -51,6 +108,24 @@ export default function VideoPlayer() {
     console.log("Topped up:", amount);
     setBalance((prev) => prev + amount);
   };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <p className="text-foreground">Loading video...</p>
+      </div>
+    );
+  }
+
+  if (!videoDetails) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <p className="text-foreground">Video not found</p>
+      </div>
+    );
+  }
+
+  const pricePerSecond = parseFloat(videoDetails.pricePerTick) / 10;
 
   return (
     <div className="min-h-screen bg-background">
