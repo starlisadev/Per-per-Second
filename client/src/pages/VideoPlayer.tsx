@@ -22,7 +22,7 @@ export default function VideoPlayer() {
   const [loading, setLoading] = useState(true);
 
   const socketRef = useRef<WebSocket | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const balanceRef = useRef(balance);
 
   const videoId = params?.id || "1";
